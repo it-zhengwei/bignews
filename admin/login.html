@@ -38,6 +38,64 @@
     </div>
   </div>
 
+
+  <!-- 模态框 -->
+  <div class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">温馨提示</h4>
+        </div>
+        <div class="modal-body">
+          <p>One fine body&hellip;</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-dismiss="modal">确定</button>
+          
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
 </body>
+<script>
+  $(function (){
+    //给登录按钮设置点击事件
+    $('.input_sub').on('click',function (e){
+      //阻止默认事件
+      e.preventDefault();
+      //获取用户输入的信息
+      var username = $('.input_txt').val().trim();
+      var password = $('.input_pass').val().trim();
+      //非空判断
+      if(username==""||password==""){
+        $('.modal-body').find('p').text('账号或者密码不能为空');
+        $('.fade').modal()
+      }
+      //发送ajax请求
+      $.ajax({
+        type:'post',
+        url:'http://localhost:8080/api/v1/admin/user/login',
+        data:{
+          username,
+          password,
+        },
+        success:function (backData){
+          // console.log(backData)
+          $('.modal-body').find('p').text(backData.msg);
+          $('.fade').modal()
+          if(backData.code==200){
+            //保存token值到本地
+            localStorage.setItem('token',backData.token)
+            $('.fade').on('hidden.bs.modal', function () {
+              //跳转到首页
+              window.location.href = "index.html";
+          })
+          }
+        }
+      })
+    })
+  })
+</script>
 
 </html>
