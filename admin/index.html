@@ -85,6 +85,26 @@
                 
             }
         })
+        //给左侧导航栏设置点击事件
+        $('.level01').on('click',function (){
+            //当前元素添加类active 其他兄弟元素删除类active 兄弟元素是div
+            $(this).addClass('active').siblings('div').removeClass('active')
+            //判断点击的是否是文章管理元素
+            if($(this).index()==1){
+                //给ul设置自动滑动 
+                $('.level02').slideToggle();
+                //给箭头设置自动添加删除类
+                $('.icon-arrowdownl').toggleClass('rotate0')
+                //给第一个li的a的dom元素设置点击事件  可以跳转和执行点击事件和冒泡
+                $('.level02>li:eq(0)>a')[0].click();
+                
+            }
+        })
+        //给每个li设置点击事件
+        $('.level02>li').on('click',function (){
+            //给当前点击元素添加类  其他兄弟元素删除类
+            $(this).addClass('active').siblings().removeClass('active')
+        })
     })
 </script>
 </html>
