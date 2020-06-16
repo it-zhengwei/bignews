@@ -69,5 +69,57 @@
         </div>
     </div>
 </body>
+<script src="./libs/http.js"></script>
+<script>
+    $(function (){
+        //页面一进来，发送ajax请求获取用户信息
+        $.ajax({
+            type:'get',
+            url:bigapi.detail,
+            success:function (backData){
+                // console.log(backData)
+                //把响应的信息渲染到页面上
+                $('#inputEmail1').val(backData.data.username);
+                $('#inputEmail2').val(backData.data.nickname);
+                $('#inputEmail3').val(backData.data.email);
+                $('#inputEmail4').val(backData.data.password);
+                $('.user_pic').attr('src',backData.data.userPic)
+            }
+        })
+        //设置头像预览
+        $('#exampleInputFile').on('change',function (){
+            //获取选中的文件
+            var file = this.files[0];
+            //把文件转化为url
+            var url = URL.createObjectURL(file);
+            //把url设置给img的属性src
+            $('.user_pic').attr('src',url);
+        })
+        //给修改按钮设置点击事件
+        $('.btn-edit').on('click',function (e){
+            //阻止默认事件
+            e.preventDefault()
+            
+            //创建FormData对象
+           var fd = new FormData($('form')[0])
+        //   console.log(fd.get('userPic'))
+            // 发送ajax请求
+            $.ajax({
+                type:'post',
+                url:bigapi.edit,
+                data:fd,
+                contentType:false,
+                processData:false,
+                success:function (backData){
+                    if(backData.code == 200){
+                        alert(backData.msg)
+                        //更新首页
+                        parent.window.location.reload();
+                    }
+                }
+            })
+        })
+    })
+</script>
 
 </html>
