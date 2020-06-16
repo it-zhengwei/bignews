@@ -35,7 +35,7 @@
                         <td>奇趣事</td>
                         <td>funny</td>
                         <td class="text-center">
-                            <a href="javascript:void(0)" data-toggle="modal" class=" btn btn-info btn-xs">编辑</a>
+                            <a href="javascript:void(0)" data-toggle="modal" data-target="#myModal" class=" btn btn-info btn-xs">编辑</a>
                             <a href="javascript:void(0)" class="btn btn-danger btn-xs">删除</a>
                         </td>
                     </tr>
@@ -44,7 +44,7 @@
                     <tr>
                         <td colspan="3" class="text-center">
                             <a href="javascript:void(0)" class="btn btn-success" id="xinzengfenlei" data-toggle="modal"
-                                data-target="#myModal">新增分类</a>
+                                data-target="#exampleModal">新增分类</a>
                         </td>
                     </tr>
                 </tfoot>
@@ -52,4 +52,204 @@
         </div>
     </div>
 
+
+    <!-- 模态框 -->
+  
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="exampleModalLabel">New message</h4>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="form-group">
+              <input type="hidden" name="" id="id">
+            <label for="recipient-name" class="control-label">Recipient:</label>
+            <input type="text" class="form-control" id="recipient-name">
+          </div>
+          <div class="form-group">
+            <label for="message-text" class="control-label" id="slug">Message:</label>
+            <input class="form-control" id="message-text"></input>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary">Send message</button>
+      </div>
+    </div>
+  </div>
+</div>
 </html>
+<!-- 准备一个模板 -->
+<script id="category" type="text/html">
+    {{each data v}}
+    <tr>
+        <td>{{v.name}}</td>
+        <td>{{v.slug}}</td>
+        <td class="text-center">
+            <a href="javascript:void(0)" data-id="{{v.id}}" data-toggle="modal" data-target="#exampleModal" class=" btn btn-info btn-xs">编辑</a>
+            <a href="javascript:void(0)" data-id="{{v.id}}" class="btn btn-danger btn-xs" id="delete">删除</a>
+        </td>
+    </tr>
+    {{/each}}
+</script>
+<script src="./libs/http.js"></script>
+<script>
+    $(function (){
+        //页面一进来就发送ajax请求
+        function categary(){
+            $.ajax({
+            type:'get',
+            url:bigapi.categorylist,
+            success:function (backData){
+                // console.log(backData)
+                // 把响应的信息用模板引擎渲染到页面上
+                var resHtml = template('category',backData);
+                $('tbody').html(resHtml)
+            }
+        })
+        }
+        categary();
+        //模态框显示前执行的事件
+        $('#exampleModal').on('show.bs.modal', function (e) {
+            //判断是谁触发模态框的
+            if(e.relatedTarget==document.getElementById('xinzengfenlei')){
+                $('#exampleModalLabel').text('新增分类')
+                $('.control-label').text('分类名称')
+                $('#slug').text('分类别名')
+                $('.btn-primary').text('新增').addClass('btn-success').removeClass('btn-info')
+            }else{
+                $('#exampleModalLabel').text('编辑分类')
+                $('.control-label').text('分类名称')
+                $('#slug').text('分类别名')
+                $('.btn-primary').text('编辑').addClass('btn-info').removeClass('btn-success')
+                // console.log(e.relatedTarget.getAttribute('data-id'))
+                //获取当前点击编辑的id
+                var id = e.relatedTarget.getAttribute('data-id');
+                //发送ajax请求
+                $.ajax({
+                    type:'get',
+                    url:bigapi.categorysearch,
+                    data:{
+                        id
+                    },
+                    success:function (backData){
+                        // console.log(backData)
+                        //把响应的内容设置给模态框的输入框
+                        if(backData.code == 200){
+                            $('#id').val(id)
+                            $('#recipient-name').val(backData.data[0].name)
+                            $('#message-text').val(backData.data[0].slug)
+                        }
+                    }
+                })
+            }
+        })
+        //判断模态框提交是新增还是编辑
+        $('.btn-primary').on('click',function (){
+            if($(this).hasClass('btn-success')){
+                //获取输入的信息
+                var name =$('#recipient-name').val().trim();
+                var slug =$('#message-text').val().trim();
+                //非空判断
+                if(name==""||slug==""){
+                    alert('内容不能为空');
+                    return;
+                }
+                //发送ajax请求
+                $.ajax({
+                    type:'post',
+                    url:bigapi.categoryadd,
+                    data:{
+                        name,
+                        slug,
+                    },
+                    success:function (backData){
+                        // console.log(backData)
+                        if(backData.code==201){
+                            alert('新增成功')
+                            categary();
+                            //隐藏模态框
+                            $('#exampleModal').modal('hide')
+                            //清空输入框内容
+                            $('#recipient-name').val("")
+                            $('#message-text').val("")
+                        }
+                    }
+                })
+               
+            }else{
+                // console.log('我是编辑')
+               //获取修改的信息
+               var name =  $('#recipient-name').val().trim();
+               var slug = $('#message-text').val().trim();
+               var id =  $('#id').val();
+               //非空判断
+               if(name==""||slug==""){
+                   alert('修改信息不能为空');
+                   return;
+               }
+               //发送ajax请求
+               $.ajax({
+                   type:'post',
+                   url:bigapi.categoryedit,
+                   data:{
+                       id,
+                       slug,
+                       name
+                   },
+                   success:function (backData){
+                    //    console.log(backData)
+                    if(backData.code==200){
+                        alert(backData.msg);
+                        categary();
+                        //隐藏模态框
+                        $('#exampleModal').modal('hide')
+                        //把内容都清空
+                        $('#recipient-name').val("")
+                        $('#message-text').val("")
+                    }
+                   }
+               })
+               
+            }
+        })
+        //给取消设置点击事件
+        $('.btn-default').on('click',function (){
+            //把内容设置为空  
+            //方法一：
+            // $('#recipient-name').val("")
+            // $('#message-text').val("")
+
+            //方法二：  form的dom元素调用reset方法重置表单内容为默认值
+            $('.modal-body>form')[0].reset();
+        })
+        //因为删除是未来元素  所以给删除按钮设置委托注册事件
+        $('tbody').on('click',"#delete",function (){
+            //提示用户是否删除
+            if(confirm('你确定要删除')){
+                //获取用户id
+                var id = $(this).attr('data-id');
+                //发送ajax请求
+                $.ajax({
+                    type:'post',
+                    url:bigapi.categorydelete,
+                    data:{
+                        id,
+                    },
+                    success:function (backData){
+                        // console.log(backData)
+                        if(backData.code==204){
+                            alert(backData.msg);
+                            //重新获取类别
+                            categary();
+                        }
+                    }
+                })
+            }
+        })
+    })
+</script>
