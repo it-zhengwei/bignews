@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="./css/iconfont.css">
     <link rel="stylesheet" href="./css/main.css">
     <script src="./libs/jquery-1.12.4.min.js"></script>
+    <!-- 导入bootstrap.js文件 -->
+    <script src="./libs/bootstrap/js/bootstrap.min.js"></script>
+    <!-- 导入pagination.js文件 -->
+    <script src="./libs/jquery.twbsPagination.js"></script>
     <!-- 引入模板引擎js文件 -->
     <script src="./libs/template-web.js"></script>
 </head>
@@ -69,9 +73,155 @@
                 </tbody>
             </table>
             <div class="row text-center">
+                <!-- 导入分页结构 -->
+                <ul id="pagination" class="pagination-sm"></ul>
+                <p>没有数据</p>
             </div>
         </div>
     </div>
 </body>
 
 </html>
+<!-- 导入http.js -->
+<script src="./libs/http.js"></script>
+<!-- 准备一个类别模板 -->
+<script id="category" type="text/html">
+    <option value="">所有分类</option>
+    {{each data v}}
+    <option value="{{v.id}}">{{v.name}}</option>
+    {{/each}}
+</script>
+<script id="artical" type="text/html">
+    {{each data.data v}}
+    <tr>
+        <td>{{v.title}}</td>
+        <td>{{v.author}}</td>
+        <td>{{v.category}}</td>
+        <td class="text-center">{{v.date}}</td>
+        <td class="text-center">{{v.state}}</td>
+        <td class="text-center">
+            <a href="article_edit.html?id={{v.id}}" class="btn btn-default btn-xs">编辑</a>
+            <a href="javascript:void(0);" data-id="{{v.id}}" class="btn btn-danger btn-xs delete">删除</a>
+        </td>
+    </tr>
+    {{/each}}
+</script>
+<script>
+    $(function (){
+        //页面一进来发送ajax请求获取类别信息
+        $.ajax({
+            type:'get',
+            url:bigapi.categorylist,
+            success:function (backData){
+                // console.log(backData)
+                //通过模板引擎渲染到页面上
+                //select下拉菜单  val()是获取到当前选中option的value值 如果value值没有就获取文本
+                //调用template方法
+                var resHtml = template('category',backData);
+                $('#selCategory').html(resHtml);
+                
+            }
+        })
+        //封装一个相同部分
+        function getData(callback,page){
+            $.ajax({
+            type:'get',
+            url:bigapi.articlequery,
+            data:{
+                type:$('#selCategory').val().trim(),
+                state:$('#selStatus').val().trim(),
+                page:page
+            },
+            success:function(backData){
+                // console.log(backData)
+                //通过模板引擎渲染到页面上
+                var resHtml = template('artical',backData);
+                $('tbody').html(resHtml)
+                if(callback!=null&&backData.data.data.length!=0){
+                    $('#pagination').show().next().hide();
+                     //执行回调函数
+                callback(backData);
+                }else if(backData.data.data.length==0&&that==1){
+                    $('#pagination').hide().next().show();
+                }else if(backData.data.data.length==0&&backData.data.totalPage==(that-1)){
+                    that--;
+                   
+                    //重新绘制
+                    $('#pagination').twbsPagination("changeTotalPages",backData.data.totalPage, that);
+                }
+            }
+        })
+        }
+        //页面一进来发送ajax请求获取所有的文章显示到页面
+        getData(function(backData){
+              //执行pagination
+              $('#pagination').twbsPagination({
+                    totalPages: backData.data.totalPage,
+                    visiblePages: 7,
+                    first:'首页',
+                    last:'尾页',
+                    prev:'上一页',
+                    next:'下一页',
+                    onPageClick: function (event, page) {
+                        //记录当前点击页码
+                        that = page;
+                      //这里的page是记录当前点击页码  默认点击第一页
+                    //   console.log(page)
+                    //根据点击页码渲染信息到页面
+                       $.ajax({
+                        type:'get',
+                        url:bigapi.articlequery,
+                        data:{
+                            type:$('#selCategory').val().trim(),
+                            state:$('#selStatus').val().trim(),
+                            page:page
+                        },
+                        success:function(backData){
+                            console.log(backData)
+                            //通过模板引擎渲染到页面上
+                            var resHtml = template('artical',backData);
+                            $('tbody').html(resHtml)
+                        }
+                    })
+                    }
+                });
+        })
+       //给筛选设置点击事件
+       $('#btnSearch').on('click',function (e){
+           //筛选都是从第一页开始的
+           that =1;
+           //阻止默认提交事件
+           e.preventDefault();
+           //发送ajax请求
+           getData(function (backData){
+            $('#pagination').twbsPagination("changeTotalPages",backData.data.totalPage, 1)
+           },that)
+       })
+       //声明一个变量保存点击的页码
+       var that ;
+       //给删除按钮设置委托注册事件
+       $('tbody').on('click','.delete',function (){
+        if(confirm('你确定要删除')){
+                //获取当前点击元素的id
+           var id = $(this).attr('data-id');
+        //    console.log(id)
+        //发送ajax请求
+        $.ajax({
+            type:'post',
+            url:bigapi.articledelete,
+            data:{id},
+            success:function (backData){
+                // console.log(backData)
+                if(backData.code==204){
+                    alert(backData.msg);
+                    //删除成功要重新渲染信息  在删除那一页重新渲染
+                   getData(function(backData){
+                    $('#pagination').twbsPagination("changeTotalPages",backData.data.totalPage, that)
+                   },that)
+                }
+            }
+        })
+        }
+       })
+    })
+</script>
