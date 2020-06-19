@@ -177,7 +177,7 @@
                             page:page
                         },
                         success:function(backData){
-                            console.log(backData)
+                            // console.log(backData)
                             //通过模板引擎渲染到页面上
                             var resHtml = template('artical',backData);
                             $('tbody').html(resHtml)
@@ -186,6 +186,13 @@
                     }
                 });
         })
+
+         //给发表按钮设置点击事件
+         $('#release_btn').on('click',function (){
+            //触发父页面的Li标签事件
+            parent.$('ul.level02>li:eq(1)').click();
+        })
+
        //给筛选设置点击事件
        $('#btnSearch').on('click',function (e){
            //筛选都是从第一页开始的
