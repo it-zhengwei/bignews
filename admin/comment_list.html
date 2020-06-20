@@ -11,6 +11,10 @@
   <link rel="stylesheet" href="css/iconfont.css">
   <link rel="stylesheet" href="css/main.css">
   <script src="./libs/jquery-1.12.4.min.js"></script>
+   <!-- 导入bootstrap.js文件 -->
+   <script src="./libs/bootstrap/js/bootstrap.min.js"></script>
+   <!-- 导入pagination.js文件 -->
+   <script src="./libs/jquery.twbsPagination.js"></script>
   <script src="./libs/template-web.js"></script>
 </head>
 
@@ -142,19 +146,7 @@
         </tbody>
       </table>
       <div class="row text-center">
-        <ul class="pagination pagination-sm">
-          <li class="page-item first disabled"><a href="#" class="page-link">首页</a></li>
-          <li class="page-item prev disabled"><a href="#" class="page-link">上一页</a></li>
-          <li class="page-item active"><a href="#" class="page-link">1</a></li>
-          <li class="page-item"><a href="#" class="page-link">2</a></li>
-          <li class="page-item"><a href="#" class="page-link">3</a></li>
-          <li class="page-item"><a href="#" class="page-link">4</a></li>
-          <li class="page-item"><a href="#" class="page-link">5</a></li>
-          <li class="page-item"><a href="#" class="page-link">6</a></li>
-          <li class="page-item"><a href="#" class="page-link">7</a></li>
-          <li class="page-item next"><a href="#" class="page-link">下一页</a></li>
-          <li class="page-item last"><a href="#" class="page-link">尾页</a></li>
-        </ul>
+        
         <ul id="pagination" class="pagination-sm"></ul>
       </div>
 
@@ -163,3 +155,149 @@
 </body>
 
 </html>
+<!-- 导入http.js文件 -->
+<script src="./libs/http.js"></script>
+<!-- 准备评论模板 -->
+<script id="comment" type="text/html">
+  {{each data.data v}}
+  {{if v.state=="待审核"}}
+  <tr class="danger">
+    {{else}}
+    <tr>
+      {{/if}}
+    <td>{{v.author}}</td>
+    <td>{{v.content}}</td>
+    <td>《{{v.title}}》</td>
+    <td>{{v.date}}-{{v.time}}</td>
+    <td>{{v.state}}</td>
+    <td class="text-center">
+      {{if v.state=="待审核"}}
+      <a href="javascript:void(0);;" data-id="{{v.id}}" class="btn btn-info btn-xs">批准</a>
+      {{else if v.state=="已通过"}}
+      <a href="javascript:void(0);;" data-id="{{v.id}}" class="btn btn-warning btn-xs">拒绝</a>
+      {{/if}}
+      <a href="javascript:void(0);;" data-id="{{v.id}}" class="btn btn-danger btn-xs">删除</a>
+    </td>
+  </tr>
+  {{/each}}
+</script>
+<script>
+  $(function(){
+   //封装生成评论页面的函数
+   function get_comment(callback,page){
+      
+    $.ajax({
+      type:'get',
+      url:bigapi.commentsearch,
+      data:{
+        page:page
+      },
+      success:function (backData){
+        // console.log(backData)
+        if(backData.code==200){
+          //利用模板引擎渲染到页面上
+          var resHtml = template('comment',backData);
+          $('tbody').html(resHtml)
+          if(callback!=null&&backData.data.data.length!=0){
+            callback(backData);
+          }else if(backData.data.data.length==0&&backData.data.totalPage==that-1){
+            //当前页减一
+            that--;
+            // 重新绘制页码
+            $('#pagination').twbsPagination('changeTotalPages',backData.data.totalPage,that)
+
+          }
+        }
+      }
+    })
+   }
+   //声明一个全局变量保存当前页
+   var that;
+   //页面一进来就发送ajax请求获取评论
+   get_comment(function(backData){
+    $('#pagination').twbsPagination({
+                    totalPages: backData.data.totalPage,
+                    visiblePages: 7,
+                    first:'首页',
+                    last:'尾页',
+                    prev:'上一页',
+                    next:'下一页',
+                    onPageClick: function (event, page) {
+                      that=page;
+                      //page是记录当前点击的页码
+                      //重新渲染评论列表
+                      get_comment(null,page)
+                    }
+
+                    
+    },1)
+
+  })
+  //给批准按钮设置委托注册事件
+  $('tbody').on('click','.btn-info',function (){
+    //获取id值
+    var id = $(this).attr('data-id');
+    //发送ajax请求
+    $.ajax({
+      type:'post',
+      url:bigapi.commentpass,
+      data:{
+        id
+      },
+      success:function (backData){
+        // console.log(backData)
+        if(backData.code==200){
+          alert('批准成功');
+          //重新获取当前页评论列表
+          get_comment(null,that)
+        }
+      }
+    })
+  })
+  //给拒绝按钮设置委托注册事件
+  $('tbody').on('click','.btn-warning',function (){
+    //获取id值
+    var id = $(this).attr('data-id');
+    //发送ajax请求
+    $.ajax({
+      type:'post',
+      url:bigapi.reject,
+      data:{
+        id
+      },
+      success:function (backData){
+        // console.log(backData)
+        if(backData.code==200){
+          alert('拒绝成功');
+          //重新获取当前页评论列表
+          get_comment(null,that)
+        }
+      }
+    })
+  })
+  //给删除按钮设置委托注册事件
+  $('tbody').on('click','.btn-danger',function (){
+       //获取id值
+    var id = $(this).attr('data-id');
+    //发送ajax请求
+    $.ajax({
+      type:'post',
+      url:bigapi.delete,
+      data:{
+        id
+      },
+      success:function (backData){
+        // console.log(backData)
+        if(backData.code==200){
+          alert('删除成功');
+          //重新获取当前页评论列表
+          get_comment(function (backData){
+            //重绘分页
+            $('#pagination').twbsPagination('changeTotalPages',backData.data.totalPage,that)
+          },that)
+        }
+      }
+    })
+  })
+})
+</script>
