@@ -294,7 +294,7 @@
 </script>
 <script id="category" type="text/html">
     {{each data v}}
-    <li><a href="./list.html?id={{v.id}}">{{v.name}}</a></li>
+    <li><a href="./list.html?category={{v.id}}">{{v.name}}</a></li>
     {{/each}}
 </script>
 <script>
@@ -384,8 +384,12 @@
             e.preventDefault();
             //获取输入的文本
             var data = $('.search_txt').val().trim();
-            //跳转到列表页
+            if(data==""){
+               alert('内容不能为空')
+           }else{
+                //跳转到列表页
             window.location.href = './list.html?search='+data;
+           }
         })
     })
 </script>
