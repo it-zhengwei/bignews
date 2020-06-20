@@ -12,7 +12,16 @@
         //焦点关注
         attention: baseURL + '/index/attention',
         //文章类型
-        category:baseURL+'/index/category',
+        category: baseURL + '/index/category',
+        //文章搜索
+        search: baseURL + '/index/search',
+        //文章详细信息
+        article: baseURL + '/index/article',
+        //发表评论
+        publish_comment: baseURL + '/index/post_comment',
+        //评论列表
+        get_comment: baseURL + '/index/get_comment',
+        
     }
     w.api = api
 }(window))
