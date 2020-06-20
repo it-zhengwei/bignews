@@ -230,3 +230,176 @@
 </body>
 
 </html>
+<!-- 导入http.js -->
+<script src="./http.js"></script>
+<!-- 准备文章模板 -->
+<script id="article" type="text/html">
+    {{each data.data v}}
+    <div class="common_news_list">
+        <a href="./article.html?id={{v.id}}" class="list_pic"><img src="{{v.cover}}" alt=""></a>
+        <h4><a href="./article.html?id={{v.id}}">{{v.title}} </a></h4>
+        <p>{{v.content}}
+        </p>
+        <div class="new_info">
+            <span>标签：{{v.category}}&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<i class="fa fa-eye"></i>&nbsp;阅读( {{v.read}}
+                )&nbsp;&nbsp;&nbsp;<i class="fa fa-commenting"></i>&nbsp;评论( {{v.comments}} )</span>
+            <b>发布于{{v.date}}</b>
+        </div>
+    </div>
+    {{/each}}
+</script>
+<!-- 类别模板 -->
+<script id="category" type="text/html">
+    {{each data v}}
+    <li><a href="./list.html?category={{v.id}}">{{v.name}}</a></li>
+    {{/each}}
+</script>
+<!-- 准备一个获取最新评论的模板 -->
+<script id="comment" type="text/html">
+    {{each data v}}
+    <li>
+        <span>{{v.author.substring(0,1)}}</span>
+        <b><em>{{v.author}}</em> {{v.date}}-{{v.time}}说:</b>
+        <strong>{{v.intro}}</strong>
+    </li>
+    {{/each}}
+</script>
+<!-- 准备一个焦点关注的模板 -->
+<script id="attention" type="text/html">
+    {{each data v}}
+    <li><a href="./article.html?id={{v.id}}">{{v.intro}}</a></li>
+    {{/each}}
+ </script>
+ <script id="category" type="text/html">
+     {{each data v}}
+     <li><a href="./list.html?category={{v.id}}">{{v.name}}</a></li>
+     {{/each}}
+ </script>
+
+<script>
+    $(function (){
+        //获取url带来的参数
+        var search = window.location.search;
+        var parameter = window.location.search.split('=')[0];
+        var data = window.location.search.split('=')[1];
+        //判断是搜索栏进来还是类别栏进来
+        if(parameter=='?category'&&data!=""){
+            //这是类别栏进来的
+            $.ajax({
+                type:'get',
+                url:api.search,
+                data:{
+                    type:data
+                },
+                success:function (backData){
+                    // console.log(backData);
+                    //通过模板引擎渲染到页面上
+                    var resHtml = template('article',backData);
+                    $('.setfr').html('<div class="list_title"><h3>'+backData.data.data[0].category+'</h3></div>'+resHtml)
+                }
+            })
+        }else if(search==""){
+            //这是直接输入网址进来的
+            //跳转到首页
+            window.location.href = './index.html'
+        }else if(parameter=="?search"){
+            //这是搜索栏进来的
+
+            $.ajax({
+                type:'get',
+                url:api.search,
+                data:{
+                    key:decodeURI(data),
+                },
+                success:function (backData){
+                    // console.log(backData)
+                     //判断有没有数据
+                     if(backData.data.data.length==0){
+                        $('.setfr').html('<div class="list_title"><h3>没有数据</h3></div>')
+                     }else{
+                         //通过模板引擎渲染到页面上
+                     var resHtml = template('article',backData);
+                    $('.setfr').html('<div class="list_title"><h3>搜索关键字:'+decodeURI(data)+'</h3></div>'+resHtml)
+                     }
+                }
+            })
+        }else if(data==""){
+            //这是不输入信息就进来的
+            //跳转回首页
+            window.location.href = './index.html'
+        }
+
+         //发送请求获取所有文章类别
+         $.ajax({
+            type:'get',
+            url:api.category,
+            success:function (backDate){
+                // console.log(backDate)
+            var resHtml = template('category',backDate);
+            $('.level_two').html('<li class="up"></li>'+resHtml)
+            $('.left_menu').html(resHtml)
+            }
+        })
+
+        setTimeout(function(){
+             //发送ajax请求获取热门文章排行
+         $.ajax({
+            type:'get',
+            url:api.rank,
+            success:function (backDate){
+                // console.log(backDate)
+                if(backDate.code==200){
+                    //方法一：
+                    //通过模板引擎渲染到页面上
+                    // var resHtml = template('rank',backDate);
+                    // $('.hotrank_list').html(resHtml)
+
+                    //方法二:
+                    // 通过遍历响应的信息
+                    for(let i =0;i<backDate.data.length;i++){
+                        $('.content_list>li').eq(i).children('a').text(backDate.data[i].title).attr('href','./article.html?id='+backDate.data[i].id)
+                    }
+
+                }
+            }
+        })
+
+         //发送ajaxi请求获取最新评论
+         $.ajax({
+            type:'get',
+            url:api.comment,
+            success:function (backData){
+                // console.log(backData)
+                if(backData.code==200){
+                    var resHtml = template('comment',backData);
+                    $('.comment_list').html(resHtml)
+                }
+            }
+        })
+
+         //发送ajax请求获取焦点关注
+         $.ajax({
+            type:'get',
+            url:api.attention,
+            success:function (backData){
+                // console.log(backData)
+                //通过模板引擎渲染到页面上
+                var resHtml = template('attention',backData)
+                $('.guanzhu_list').html(resHtml);
+            }
+        })
+        //给搜索按钮设置点击事件
+        $('.search_btn').on('click',function (e){
+            e.preventDefault();
+            //获取输入的文本
+            var data = $('.search_txt').val().trim();
+           if(data==""){
+               alert('内容不能为空')
+           }else{
+                //跳转到列表页
+            window.location.href = './list.html?search='+data;
+           }
+        })
+        },200)
+    })
+</script>
